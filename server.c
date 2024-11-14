@@ -9,118 +9,89 @@
 #include <unistd.h>
 /* Threads */
 #include <pthread.h>
-#include <time.h>
 /* ------ */
 #include "server.h"
+#define MIN_PLAYERS 2
 
-#define MAX_PLAYER 4
-#define BUFFER_SIZE 1024
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t client_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
-void start_game(ServerData *server_data)
-{
-    for (int i = 0; i < 100; i++)
-    {
-        server_data->game->cards[i] = i + 1;
-    }
-    server_data->game->lives = MAX_PLAYERS;
-    server_data->game->level = 1;
-    server_data->game->current_card = 0;
-    server_data->game->played_count = 0;
-    server_data->game->status = DISTRIBUTION;
-    pthread_cond_broadcast(&server_data->cond);
-}
+int active_connection = 0;
+int next_client_id = 1;
+pthread_t *client_handlers = NULL;  
+
 
 int main(int argc, char const *argv[])
 {
-    srand(time(NULL));
     int server_socket;
     struct sockaddr_in server_addr, client_addr;
     socklen_t addr_len = sizeof(client_addr);
-    ServerData server_data = {0};
-    pthread_mutex_init(&server_data.mutex, NULL);
-    pthread_cond_init(&server_data.cond, NULL);
-    if (argc < 2)
-    {
-        perror("Error: No port provided.\n");
-        exit(1);
-    }
     int port = atoi(argv[1]);
-    if (port <= 1024)
-    {
-        perror("Error: Select a port number greater than 1024.\n");
-        exit(1);
-    }
+
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (server_socket < 0)
     {
-        perror("Error: Could not create socket.");
+        perror("Erreur: Socket.");
         exit(1);
     }
+
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
     if (bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     {
-        perror("Error: Binding issue.");
+        perror("Erreur: Binding.");
         close(server_socket);
         exit(1);
     }
+
     listen(server_socket, 5);
-    printf("Server waiting for connection on port %d...\n", port);
-    server_data.game = malloc(sizeof(TheMind));
-    if (server_data.game == NULL)
+    printf("Serveur en attente sur le port : %d\n", port);
+    client_handlers = malloc(MIN_PLAYERS * sizeof(pthread_t));  
+    while (next_client_id <= MIN_PLAYERS)
     {
-        perror("Error: Game allocation issue");
-        close(server_socket);
-        exit(1);
-    }
-    server_data.game->status = WAITING;
-    memset(server_data.list_players, 0, sizeof(server_data.list_players));
-    while (1)
-    {
-       
         int client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &addr_len);
-        if (client_socket < 0)
-        {
-            perror("Error: Accepting client issue.");
-            continue;
-        }
-        pthread_mutex_lock(&server_data.mutex);
-        if (server_data.player_num < MAX_PLAYERS && server_data.game->status == WAITING)
-        {
-            server_data.list_players[server_data.player_num].socket = client_socket;
-
-            ClientData *client_data = malloc(sizeof(ClientData));
-            client_data->player_data = server_data.list_players[server_data.player_num];
-            client_data->server_data = &server_data;
-
-            pthread_t thread;
-            if (pthread_create(&thread, NULL, client_handler, (void *)&client_data) != 0)
-            {
-                perror("Error: Thread creation issue.");
-                close(client_socket);
-                pthread_mutex_unlock(&server_data.mutex);
-                continue;
-            }
-            pthread_detach(thread);
-            server_data.player_num++;
-            if (server_data.player_num == MAX_PLAYERS)
-            {
-                start_game(&server_data);
-            }
-            pthread_mutex_unlock(&server_data.mutex);
-        }
-        else
-        {
-            pthread_mutex_unlock(&server_data.mutex);
-            printf("Room is full, connection refused.\n");
-            close(client_socket);
-        }
+        pthread_mutex_lock(&client_lock);
+        int client = next_client_id++;
+        active_connection++; 
+        printf("Connexion acceptée: %d - Nombre de connexions : %d\n", inet_ntoa(client_addr.sin_addr), active_connection);
+        pthread_create(&client_handlers[client - 1], NULL, client_handler, &client_socket);
+        pthread_detach(client_handlers[client - 1]);  
+        pthread_mutex_unlock(&client_lock);
     }
-    pthread_mutex_destroy(&server_data.mutex);
-    pthread_cond_destroy(&server_data.cond);
-    free(server_data.game);
+
     close(server_socket);
+    free(client_handlers);  
     return 0;
+}
+
+void *client_handler(void *arg)
+{
+    int sock = *((int *)arg);
+    printf("Gestion du client n° %d\n", sock);
+    wait_players();
+    sleep(2); 
+    pthread_mutex_lock(&client_lock);
+    active_connection--;
+    printf("Client %d déconnecté. Nombre de connexions restantes: %d\n", sock, active_connection);
+    pthread_mutex_unlock(&client_lock);
+
+    return NULL;
+}
+
+
+void wait_players()
+{
+    pthread_mutex_lock(&lock);
+    while (active_connection < MIN_PLAYERS)
+    {
+        printf("En attente de joueurs...\n");
+        pthread_cond_wait(&cond, &lock);  
+    }
+
+    pthread_cond_broadcast(&cond);  
+    pthread_mutex_unlock(&lock);
 }
