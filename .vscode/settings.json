@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "pthread.h": "c",
+        "types.h": "c",
+        "client_handler.h": "c",
+        "unistd.h": "c",
+        "socket.h": "c",
+        "stdlib.h": "c",
+        "game.h": "c"
+    }
+}
