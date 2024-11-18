@@ -28,12 +28,14 @@ typedef struct
     int round;
     int level;
     InfoClient *players_list[MAX_CLIENTS];
-    int played_cards[MAX_CLIENTS];
+    int* played_cards;
     int previous_card;
     Status state;
 } GameState;
 
 void *client_handlers(void *arg);
 void *game_logic(void *arg);
+char *convert_tab(int *tab, int size);
+void game_state(InfoClient *client);
 
 #endif // SERVER_H

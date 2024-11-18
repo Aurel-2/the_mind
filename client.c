@@ -4,18 +4,17 @@
 #include <string.h>
 #include <pthread.h>
 #include <arpa/inet.h>
-
+#define BUFFER_SIZE 1024
 #define SERVER_ADDR "127.0.0.1"
 
 void *receive_messages(void *arg)
 {
-    int socket_fd = *((int *)arg);
-    char buffer[256];
-    ssize_t read_size;
-
-    while ((read_size = recv(socket_fd, buffer, sizeof(buffer), 0)) > 0)
+    int serveur_socket = *((int *)arg);
+    char buffer[BUFFER_SIZE];
+    ssize_t taille_reponse;
+    while ((taille_reponse = recv(serveur_socket, buffer, sizeof(buffer), 0)) > 0)
     {
-        buffer[read_size] = '\0';
+        buffer[taille_reponse] = '\0';
         printf("%s\n", buffer);
     }
     return NULL;
@@ -23,40 +22,40 @@ void *receive_messages(void *arg)
 
 int main(int argc, char const *argv[])
 {
-    const char * bienvenue = "cat 'welcome'";
+    const char *bienvenue = "cat 'welcome'";
     system(bienvenue);
-    int socket_fd;
-    struct sockaddr_in server_addr;
-    char buffer[256];
-
-    if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    printf("\e[31mVeuillez choisir un nom :\e[37m\n");
+    char buffer[BUFFER_SIZE];
+    fgets(buffer, sizeof(buffer), stdin);
+    int serveur_socket;
+    const int port = atoi(argv[1]);
+    struct sockaddr_in adresse_serveur;
+    if ((serveur_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
         perror("Problème lors de la création du socket");
         exit(1);
     }
-    int port = atoi(argv[1]);
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);
-    server_addr.sin_addr.s_addr = inet_addr(SERVER_ADDR);
 
-    if (connect(socket_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
+    adresse_serveur.sin_family = AF_INET;
+    adresse_serveur.sin_port = htons(port);
+    adresse_serveur.sin_addr.s_addr = inet_addr(SERVER_ADDR);
+
+    if (connect(serveur_socket, (struct sockaddr *)&adresse_serveur, sizeof(adresse_serveur)) < 0)
     {
         perror("La connexion a échoué");
         exit(1);
     }
 
-    pthread_t recv_thread;
-    pthread_create(&recv_thread, NULL, receive_messages, &socket_fd);
+    pthread_t thread_reception;
+    pthread_create(&thread_reception, NULL, receive_messages, &serveur_socket);
 
     while (1)
     {
-
+        char buffer[BUFFER_SIZE];
         fgets(buffer, sizeof(buffer), stdin);
-        send(socket_fd, buffer, strlen(buffer), 0);
+        send(serveur_socket, buffer, strlen(buffer), 0);
     }
 
-    close(socket_fd);
+    close(serveur_socket);
     return 0;
 }
-
-

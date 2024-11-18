@@ -6,6 +6,10 @@
         "unistd.h": "c",
         "socket.h": "c",
         "stdlib.h": "c",
-        "game.h": "c"
+        "game.h": "c",
+        "typeinfo": "c",
+        "inet.h": "c",
+        "in.h": "c",
+        "stdio.h": "c"
     }
 }
