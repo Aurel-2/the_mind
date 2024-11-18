@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -lpthread
-PORT = 8080
+PORT = 8085
 
 SERVER_SRC = server.c 
 

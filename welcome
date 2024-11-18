@@ -8,11 +8,10 @@
 	| | | | '_ \| | | '_ \ / _ \
 	| |_| | | | | | | | | |  __/
  	 \___/|_| |_|_|_|_| |_|\___|
-
-Au début de chaque manche/niveau, vous recevez un nombre de cartes numérotés de 1 à 100 égal à la valeur de la manche
-Le but : placer toutes les cartes dans un ordre croissant sans communiquer avec les autres.
-Si un joueur pose une carte dans le mauvais ordre, le jeu est immédiatement interrompu et vous perdez une vie. 
-Vous recommencez la manche avec de nouvelles cartes.
-Si un des joueurs se déconnecte de la partie, le jeu continue avec les joueurs restants.
-
-                                         
+-------------------------------------------------------------------------------------------------------------------------
+Au début de chaque manche/niveau, vous recevez un nombre de cartes numérotés de 1 à 100 égal à la valeur de la manche	
+Le but : placer toutes les cartes dans un ordre croissant sans communiquer avec les autres.							
+Si un joueur pose une carte dans le mauvais ordre, le jeu est immédiatement interrompu et vous perdez une vie.		 
+Vous recommencez la manche avec de nouvelles cartes.																	
+Si un des joueurs se déconnecte de la partie, le jeu continue avec les joueurs restants.								
+-------------------------------------------------------------------------------------------------------------------------

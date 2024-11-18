@@ -1,0 +1,6 @@
+# Objet et exécutable
+*.o
+*.exe
+# VSCode et IDEA
+/.vscode
+/.idea

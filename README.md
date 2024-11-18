@@ -6,7 +6,11 @@ Compile with make
 ```
 Run the server:
 ```bash
-  make run
+  make run-server
+```
+Run a client:
+```bash
+  make run-client
 ```
 Delete files:
 ```bash
