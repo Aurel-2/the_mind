@@ -1,6 +1,9 @@
 #ifndef SERVER_H
 #define SERVER_H
-#define MAX_CLIENTS 1
+#include <netinet/in.h>
+
+#define MAX_CLIENTS 2
+#define BUFFER_SIZE 1024
 
 typedef enum
 {
@@ -14,28 +17,40 @@ typedef enum
 
 typedef struct Client
 {
-    char name[50];
+    char pseudo[10];
     int socket_client;
-    int list_cards[100];
-    int bot;
+    int liste_cartes[100];
+    int robot;
     struct sockaddr_in client_addr;
 } InfoClient;
 
 typedef struct
 {
-    int lives;
+    int vies;
     int deck[100];
-    int round;
-    int level;
-    InfoClient *players_list[MAX_CLIENTS];
-    int* played_cards;
-    int previous_card;
-    Status state;
-} GameState;
+    int tour;
+    int manche;
+    int *cartes_jouee;
+    int carte_actuelle;
+    Status etat;
+    InfoClient *liste_joueurs[MAX_CLIENTS];
+    int socket_serveur;
+    pthread_t thread_principal;
+} Jeu;
 
-void *client_handlers(void *arg);
-void *game_logic(void *arg);
-char *convert_tab(int *tab, int size);
-void game_state(InfoClient *client);
+/* Fonctions pointeur pour les threads*/
+void *gestionnaire_client(void *client);
+void *logique_jeu(void *partie);
+/* Envoi de l'état du jeu*/
+void message_etat(InfoClient *client, char *message);
+void envoi_etat(char *message);
+void envoi_message(char *message);
+/* Logique du jeu */
+int est_valide();
+void nouvelle_manche();
+void distribution(Jeu *partie);
+void melange_cartes(Jeu *partie);
+/* Gestion du signal */
+void gestion_signal(int signal);
 
 #endif // SERVER_H

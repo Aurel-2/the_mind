@@ -4,6 +4,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <arpa/inet.h>
+
 #define BUFFER_SIZE 1024
 #define SERVER_ADDR "127.0.0.1"
 
@@ -24,7 +25,7 @@ int main(int argc, char const *argv[])
 {
     const char *bienvenue = "cat 'welcome'";
     system(bienvenue);
-    printf("\e[31mVeuillez choisir un nom :\e[37m\n");
+    printf("Veuillez choisir un nom :\n");
     char buffer[BUFFER_SIZE];
     fgets(buffer, sizeof(buffer), stdin);
     int serveur_socket;
@@ -52,10 +53,9 @@ int main(int argc, char const *argv[])
     while (1)
     {
         char buffer[BUFFER_SIZE];
-        fgets(buffer, sizeof(buffer), stdin);
+        fgets(buffer, sizeof(buffer)-1, stdin);
         send(serveur_socket, buffer, strlen(buffer), 0);
     }
-
     close(serveur_socket);
     return 0;
 }
