@@ -1,30 +1,30 @@
 CC = gcc
-CFLAGS = -g -Wall -lpthread
+CFLAGS = -g -Wall -lpthread -fsanitize=address
 PORT = 8080
 
-SERVER_SRC = server.c 
+SERVEUR_SRC = serveur.c 
 UTILS_SRC = utils.c
 JEU_SRC = jeu.c
+JEU_FCTS_SRC = jeu_fonctions.c
 GESTIONNAIRE_SRC = gestionnaire_client.c
 CLIENT_SRC =  client.c
-SERVER_OBJ = $(SERVER_SRC:.c=.o) $(UTILS_SRC:.c=.o) $(JEU_SRC:.c=.o) $(GESTIONNAIRE_SRC:.c=.o)
+SERVEUR_OBJ = $(SERVEUR_SRC:.c=.o) $(UTILS_SRC:.c=.o) $(JEU_SRC:.c=.o) $(GESTIONNAIRE_SRC:.c=.o) $(JEU_FCTS_SRC:.c=.o)
 CLIENT_OBJ  = $(CLIENT_SRC:.c=.o)
-SERVER_EXEC = server
+SERVEUR_EXEC = serveur
 CLIENT_EXEC = client
 
-all: $(SERVER_EXEC) $(CLIENT_EXEC)
+all: $(SERVEUR_EXEC) $(CLIENT_EXEC)
 
-
-$(SERVER_EXEC): $(SERVER_OBJ)
+$(SERVEUR_EXEC): $(SERVEUR_OBJ)
 	$(CC) $(CFLAGS) -o $@ $^
 
 $(CLIENT_EXEC): $(CLIENT_OBJ)
 	$(CC) $(CFLAGS) -o $@ $^
 
-run-server: $(SERVER_EXEC)
-	./$(SERVER_EXEC) $(PORT)
+run-server:
+	./$(SERVEUR_EXEC) $(PORT)
 
-run-client: $(CLIENT_EXEC)
+run-client: 
 	./$(CLIENT_EXEC) $(PORT)
 clean:
-	rm -f $(SERVER_OBJ) $(SERVER_EXEC) $(CLIENT_OBJ) $(CLIENT_EXEC)
+	rm -f $(SERVEUR_OBJ) $(SERVEUR_EXEC) $(CLIENT_OBJ) $(CLIENT_EXEC)
