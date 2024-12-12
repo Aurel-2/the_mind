@@ -10,7 +10,7 @@
 #include <pthread.h>
 #include <signal.h>
 
-#include "include/serveur.h"
+#include "../../include/serveur.h"
 
 pthread_mutex_t verrou = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t verrouarret = PTHREAD_MUTEX_INITIALIZER;
@@ -143,7 +143,6 @@ int main(int argc, char const *argv[])
     pthread_mutex_unlock(&verrouarret);
     pthread_cond_destroy(&arret);
     pthread_mutex_destroy(&verrouarret);
-
     pthread_mutex_lock(&verrou);
     free(jeu->cartes_jouee);
     free(jeu->carte_bon_ordre);

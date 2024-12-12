@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "include/utils.h"
+#include "../../include/utils.h"
 
 char *tab_to_string(int *tab, int size) {
     char *resultat = (char *) calloc(size * 4 + 1, sizeof(char));

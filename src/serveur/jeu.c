@@ -4,9 +4,9 @@
 #include <sys/types.h>
 #include <pthread.h>
 #include <sys/time.h>
-#include "include/serveur.h"
-#include "include/utils.h"
-#include "include/jeu_fonctions.h"
+#include "../../include/serveur.h"
+#include "../../include/utils.h"
+#include "../../include/jeu_fonctions.h"
 
 extern pthread_mutex_t verrou;
 extern pthread_cond_t cond;

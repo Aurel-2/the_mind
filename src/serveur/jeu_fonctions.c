@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "include/jeu_fonctions.h"
-#include "include/utils.h"
+#include "../../include/jeu_fonctions.h"
+#include "../../include/utils.h"
 
 void melange_cartes(Jeu *jeu)
 {
