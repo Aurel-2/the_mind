@@ -2,12 +2,12 @@ CC = gcc
 CFLAGS = -g -Wall -lpthread -fsanitize=address
 PORT = 8080
 
-SERVEUR_SRC = serveur.c 
-UTILS_SRC = utils.c
-JEU_SRC = jeu.c
-JEU_FCTS_SRC = jeu_fonctions.c
-GESTIONNAIRE_SRC = gestionnaire_client.c
-CLIENT_SRC =  client.c
+SERVEUR_SRC = src/serveur/serveur.c
+UTILS_SRC = src/serveur/utils.c
+JEU_SRC = src/serveur/jeu.c
+JEU_FCTS_SRC = src/serveur/jeu_fonctions.c
+GESTIONNAIRE_SRC = src/serveur/gestionnaire_client.c
+CLIENT_SRC =  src/client/client.c
 SERVEUR_OBJ = $(SERVEUR_SRC:.c=.o) $(UTILS_SRC:.c=.o) $(JEU_SRC:.c=.o) $(GESTIONNAIRE_SRC:.c=.o) $(JEU_FCTS_SRC:.c=.o)
 CLIENT_OBJ  = $(CLIENT_SRC:.c=.o)
 SERVEUR_EXEC = serveur

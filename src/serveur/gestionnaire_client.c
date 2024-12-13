@@ -8,8 +8,8 @@
 #include <signal.h>
 #include <sys/socket.h>
 
-#include "include/serveur.h"
-#include "include/jeu_fonctions.h"
+#include "../../include/serveur.h"
+#include "../../include/jeu_fonctions.h"
 
 extern pthread_mutex_t verrou;
 extern pthread_cond_t cond;
