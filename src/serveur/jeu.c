@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <pthread.h>
 #include <sys/time.h>
+#include <unistd.h>
 #include "../../include/serveur.h"
 #include "../../include/utils.h"
 #include "../../include/jeu_fonctions.h"

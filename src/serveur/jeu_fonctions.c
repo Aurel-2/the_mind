@@ -48,7 +48,6 @@ void distribution(Jeu *jeu)
     }
     printf("\n%s", BLANC);
 }
-
 void nouvelle_manche(Jeu *jeu)
 {
     char buffer[BUFFER_SIZE];
@@ -94,7 +93,7 @@ void insertion_stats(Jeu *jeu)
     snprintf(buffer, BUFFER_SIZE, "%0.3f %d %d %d-%d-%d", total_moyenne_react, jeu->carte_actuelle, jeu->manche,
              date.tm_mday, date.tm_mon + 1, date.tm_year + 1900);
 
-    FILE *fichier = fopen("statistiques.txt", "a");
+    FILE *fichier = fopen("data.txt", "a");
     if (fichier == NULL)
     {
         printf("\nErreur lors de l'ouverture du fichier de statistiques.\n");
@@ -108,7 +107,7 @@ void envoi_stats(Jeu *jeu)
 {
     char buffer[BUFFER_SIZE];
     char classement[BUFFER_SIZE] = "";
-    char *commande = "awk '{print $0}' statistiques.txt | sort -k3,3nr | head -n 10";
+    char *commande = "awk '{print $0}' data.txt | sort -k3,3nr | head -n 10";
     FILE *fichier = popen(commande, "r");
     if (fichier == NULL)
     {
@@ -116,12 +115,11 @@ void envoi_stats(Jeu *jeu)
         exit(1);
     }
 
-    strcat(classement, "\n--- Top 10 --- :\n");
+    strcat(classement, "\n--- Top 10 --- \n");
     while (fgets(buffer, sizeof(buffer), fichier) != NULL)
     {
         strcat(classement, buffer);
     }
-
     envoi_message(jeu, classement);
     pclose(fichier);
 }
@@ -134,7 +132,6 @@ void message_etat(Jeu *jeu, InfoClient *client, char *message)
     char *cartes_serveur_c = tab_to_string(jeu->cartes_jouee, taille_serveur);
     char *cartes_joueur_c = tab_to_string(client->liste_cartes, taille_joueur);
     char *titre = (jeu->tour > 0) ? "--- Partie en cours ---" : "--- Début de la jeu ---";
-
     snprintf(buffer, BUFFER_SIZE,
              "\n%s\n%sManche : %d%s\n%sTour : %d / %d%s\n%sVies : %d%s\n%sCartes jouées : %s%s\n%sVos cartes : %s\n%sEtat de la jeu : %s%s%s\n-----------------------\n",
              titre,
@@ -169,18 +166,46 @@ void envoi_etat(Jeu *jeu, char *message)
     {
         if (jeu->liste_joueurs[j] != NULL)
         {
-            message_etat(jeu, jeu->liste_joueurs[j], message);
+            if (jeu->liste_joueurs[j]->robot == 0)
+            {
+                message_etat(jeu, jeu->liste_joueurs[j], message);
+            }
+            else
+            {
+                if (jeu->tour == 0)
+                {
+                    message_robot(jeu, jeu->liste_joueurs[j]);
+                }
+            }
         }
     }
 }
-
 void envoi_message(Jeu *jeu, char *message)
 {
     for (int j = 0; j < jeu->nb_clients; j++)
     {
         if (jeu->liste_joueurs[j] != NULL)
         {
-            send(jeu->liste_joueurs[j]->socket_client, message, strlen(message), 0);
+            if (jeu->liste_joueurs[j]->robot == 0)
+            {
+                send(jeu->liste_joueurs[j]->socket_client, message, strlen(message), 0);
+            }
+            else
+            {
+                if (jeu->etat == SCORE)
+                {
+                    send(jeu->liste_joueurs[j]->socket_client, message, strlen(message), 0);
+                }
+            }
         }
     }
+}
+
+void message_robot(Jeu *jeu, InfoClient *client)
+{
+    char buffer_robot[BUFFER_SIZE];
+    char *cartes_robot = tab_to_string(client->liste_cartes, jeu->manche);
+    snprintf(buffer_robot, BUFFER_SIZE, "%s", cartes_robot);
+    send(client->socket_client, buffer_robot, strlen(buffer_robot), 0);
+    free(cartes_robot);
 }

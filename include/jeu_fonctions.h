@@ -20,6 +20,6 @@ void envoi_etat(Jeu *jeu, char *message);
 
 void envoi_message(Jeu *jeu, char *message);
 
-
+void message_robot(Jeu* jeu, InfoClient *client);
 
 #endif // JEU_FONCTIONS_H
