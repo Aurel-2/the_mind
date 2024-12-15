@@ -12,11 +12,9 @@
 #define MAGENTA "\033[35m"
 #define CYAN "\033[36m"
 
-
-#define MAX_CLIENTS 2
-#define MIN_CLIENTS MAX_CLIENTS / 2
 #define BUFFER_SIZE 1024
 #define MAX_MANCHE 12
+#define MAX_CLIENTS 2
 
 typedef enum {
     PRET,
@@ -30,8 +28,8 @@ typedef enum {
 typedef struct Client {
     int socket_client;
     char pseudo[BUFFER_SIZE];
-    int robot;
     int *liste_cartes;
+    int robot;
     float *liste_temps_reaction;
     struct sockaddr_in client_addr;
 } InfoClient;

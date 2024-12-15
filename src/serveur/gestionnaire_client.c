@@ -32,7 +32,6 @@ void *gestionnaire_client(void *p_client)
         return NULL;
     }
     pthread_mutex_unlock(&verrou);
-
     ssize_t bytes = recv(info_client->socket_client, name, sizeof(name) - 1, 0);
     if (bytes <= 0)
     {
@@ -40,19 +39,21 @@ void *gestionnaire_client(void *p_client)
         deconnexion_client(info_client);
         return NULL;
     }
-
     name[bytes] = '\0';
     snprintf(info_client->pseudo, sizeof(info_client->pseudo), "%s", name);
+    sleep(1);
     pthread_mutex_lock(&verrou);
-    while (jeu->nb_clients < MAX_CLIENTS)
+    if (strcmp(info_client->pseudo, "robot") == 0)
     {
-        snprintf(buffer, BUFFER_SIZE, "%sLe jeu est sur le point de commencer...\n%s", VERT, BLANC);
-        send(info_client->socket_client, buffer, strlen(buffer), 0);
-        pthread_cond_wait(&cond, &verrou);
+        info_client->robot = 1;
+    }
+    else
+    {
+        info_client->robot = 0;
     }
     pthread_mutex_unlock(&verrou);
 
-    while (jeu->etat != FIN && est_vivant == 1)
+    while (jeu->etat != FIN && est_vivant)
     {
         pthread_mutex_lock(&verrou);
         while (jeu->etat == DISTRIBUTION)
@@ -60,11 +61,10 @@ void *gestionnaire_client(void *p_client)
             pthread_cond_wait(&cond, &verrou);
         }
         pthread_mutex_unlock(&verrou);
-
         while (jeu->etat == EN_JEU)
         {
             gettimeofday(&debut, NULL);
-            ssize_t bytes = recv(info_client->socket_client, buffer, BUFFER_SIZE, 0);
+            bytes = recv(info_client->socket_client, buffer, BUFFER_SIZE, 0);
             gettimeofday(&fin, NULL);
             if (bytes <= 0)
             {
@@ -75,7 +75,7 @@ void *gestionnaire_client(void *p_client)
                 break;
             }
             buffer[bytes] = '\0';
-            const int indice = atoi(buffer) - 1;
+            int indice = atoi(buffer) - 1;
             if (indice >= 0 && indice < jeu->manche)
             {
                 int indice_temps = 0;
@@ -83,22 +83,24 @@ void *gestionnaire_client(void *p_client)
                 const float temps = calcul_temps_reaction(debut, fin);
                 if (traitement_carte_jouee(info_client, indice, temps, indice_temps) == 0)
                 {
-                    snprintf(buffer, BUFFER_SIZE, "%s\nIndice de carte invalide : carte déjà jouée\n%s", JAUNE, BLANC);
-                    send(info_client->socket_client, buffer, strlen(buffer), 0);
+                    if (info_client->robot == 0)
+                    {
+                        snprintf(buffer, BUFFER_SIZE, "%s\nIndice de carte invalide : carte déjà jouée\n%s", JAUNE, BLANC);
+                        send(info_client->socket_client, buffer, strlen(buffer), 0);
+                    }
                 }
                 pthread_mutex_unlock(&verrou);
             }
             else
             {
-                snprintf(buffer, BUFFER_SIZE, "%s\nIndice de carte invalide : hors limites\n%s", ROUGE, BLANC);
-                send(info_client->socket_client, buffer, strlen(buffer), 0);
+                pthread_mutex_lock(&verrou);
+                if (info_client->robot == 0)
+                {
+                    snprintf(buffer, BUFFER_SIZE, "%s\nIndice de carte invalide : hors limites\n%s", ROUGE, BLANC);
+                    send(info_client->socket_client, buffer, strlen(buffer), 0);
+                }
+                pthread_mutex_unlock(&verrou);
             }
-        }
-        while (jeu->etat == MAUVAIS_TOUR || jeu->etat == SCORE)
-        {
-            pthread_mutex_lock(&verrou);
-            pthread_cond_wait(&cond, &verrou);
-            pthread_mutex_unlock(&verrou);
         }
     }
     deconnexion_client(info_client);

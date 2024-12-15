@@ -112,6 +112,7 @@ int main(int argc, char const *argv[])
         }
 
         jeu->nb_clients++;
+        
         jeu->liste_joueurs[jeu->nb_clients - 1] = nouveau_client;
         printf("\nNouveau client connecté. Nombre de clients : %d\n", jeu->nb_clients);
         pthread_mutex_unlock(&verrou);
@@ -138,8 +139,6 @@ int main(int argc, char const *argv[])
     {
         pthread_cond_wait(&arret, &verrouarret);
     }
-
-
     pthread_mutex_unlock(&verrouarret);
     pthread_cond_destroy(&arret);
     pthread_mutex_destroy(&verrouarret);
