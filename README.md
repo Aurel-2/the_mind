@@ -43,13 +43,13 @@ Pour supprimer les fichiers de compilation et les exécutables :
 
 ## Visualisation des statistiques.
 
-Les statistiques sont récoltés uniquement si la partie s'est terminée correctement.
+Les statistiques sont collectées uniquement si la partie s'est terminée correctement.
 
-Elles sont contenus dans le fichier texte "statistiques.txt".
+Elles sont contenus dans le fichier texte "donnees.txt".
 
 Elles comportent : 
 - Le temps de réaction moyen
-- La dernière carte qui a été joué
+- La dernière carte qui a été jouée
 - La dernière manche jouée 
 - La date
 
@@ -58,8 +58,8 @@ Elles comportent :
   ./stats.sh
 ```
 La PDF contient plusieurs graphiques :
-- Le temps de réaction par rapport au nombre de manche réussi
-- Le nombre de cartes qui ont terminé la partie
+- Le temps de réaction par rapport à la dernière manche jouée
+- La fréquence de la dernière carte jouée
 
 ## Notes
 

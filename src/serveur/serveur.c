@@ -33,7 +33,7 @@ void free_liste_joueurs()
 int main(int argc, char const *argv[])
 {
     // Affiche le titre du serveur
-    printf("%s*****%s SERVEUR - THE MIND %s******\n%s", ROUGE, VERT, ROUGE, BLANC);
+    printf("%s*****%s SERVEUR - THE MIND %s******\n%s", ROUGE, VERT, BLEU, BLANC);
 
     // Initialise le générateur de nombres aléatoires
     srand(time(NULL));
@@ -53,7 +53,7 @@ int main(int argc, char const *argv[])
     int valide = 0; // Variable pour vérifier la validité de l'entrée
     while (!valide)
     {
-        printf("%s\nVeuillez saisir un nombre maximum entre 1 et 8 : \n%s", VERT, BLANC);
+        printf("%s\nVeuillez saisir un nombre maximum entre 1 et 8 : \n%s", BLEU, BLANC);
         scanf("%d", &jeu->max_clients);
         // Vérification de la validité de l'entrée
         if (jeu->max_clients >= 1 && jeu->max_clients <= 8)

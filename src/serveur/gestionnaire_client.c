@@ -98,7 +98,7 @@ void *gestionnaire_client(void *p_client)
                 {
                     if (info_client->robot == 0)
                     {
-                        snprintf(buffer, BUFFER_SIZE, "Indice de carte invalide : carte déjà jouée\n");
+                        snprintf(buffer, BUFFER_SIZE, "%s\nIndice de carte invalide : carte déjà jouée\n%s", CYAN, BLANC);
                         if (send(info_client->socket_client, buffer, strlen(buffer), 0) == -1)
                         {
                             perror("Erreur lors de l'envoi du message de carte déjà jouée.");
@@ -115,7 +115,7 @@ void *gestionnaire_client(void *p_client)
                 pthread_mutex_lock(&jeu->verrou_jeu);
                 if (info_client->robot == 0)
                 {
-                    snprintf(buffer, BUFFER_SIZE, "Indice de carte invalide : hors limites\n");
+                    snprintf(buffer, BUFFER_SIZE, "%s\nIndice de carte invalide : hors limites\n%s", ROUGE, BLANC);
                     if (send(info_client->socket_client, buffer, strlen(buffer), 0) == -1)
                     {
                         perror("Erreur lors de l'envoi du message de carte invalide.");
