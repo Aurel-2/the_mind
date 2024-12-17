@@ -115,12 +115,6 @@ int main(int argc, char const *argv[])
         {
             pthread_mutex_lock(&verrou_jeu);
             int valeur = tableau_int[indice];
-            if (tableau_int[indice] == 0)
-            {
-                printf("%s\nLe tableau comporte une erreur.\n%s", ROUGE, BLANC);
-                break;
-            }
-            
             printf("Indice %d: %d\n", indice, valeur);
             pthread_mutex_unlock(&verrou_jeu);
             // Choix du temps de sommeil par rapport à la valeur de la carte
