@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -g -Wall -lpthread
-PORT = 8099
+PORT = 8091
 
 SERVEUR_SRC = src/serveur/serveur.c
 UTILS_SRC = src/serveur/utils.c

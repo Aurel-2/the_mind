@@ -3,6 +3,7 @@
 #include <string.h>
 #include "../../include/utils.h"
 
+// Conversion un tableau d'entiers en une chaîne de caractères
 char *int_to_string(int *tab, int size) {
     char *resultat = (char *) calloc(size * 4 + 1, sizeof(char));
     if (resultat == NULL) {
@@ -22,6 +23,7 @@ char *int_to_string(int *tab, int size) {
     return resultat;
 }
 
+// Calcul la moyenne des valeurs d'un tableau
 float moyenne(float tab[], int taille) {
     float somme = 0.0;
     float compteur = 0;
@@ -34,6 +36,7 @@ float moyenne(float tab[], int taille) {
     return somme / compteur;
 }
 
+// Tri un tableau d'entiers en ordre croissant
 void tri(int *cartes, int taille) {
     for (int i = 0; i < taille - 1; i++) {
         for (int j = i + 1; j < taille; j++) {
@@ -46,14 +49,13 @@ void tri(int *cartes, int taille) {
     }
 }
 
-int string_to_int(char *donnee, int *tableau_int)
-{
+// Conversion une chaîne de caractères en un tableau d'entiers
+int string_to_int(char *donnee, int *tableau_int) {
     int j = 0;
     char *fin;
     int taille = strlen(donnee);
 
-    for (int i = 0; i < taille; i++)
-    {
+    for (int i = 0; i < taille; i++) {
         tableau_int[j] = strtol(&donnee[i], &fin, 10);
         j++;
         i = fin - donnee - 1;

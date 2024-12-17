@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <arpa/inet.h>
 #include <time.h>
+#include <signal.h>
 #include "../../include/utils.h"
 
 #define BUFFER_SIZE 1024
@@ -17,6 +18,7 @@ char donnee[BUFFER_SIZE];
 int tableau_int[12];
 int tableau_rempli = 1;
 int nouvelle_donnee = 0;
+int indice;
 
 void *reception_msg(void *arg)
 {
@@ -34,17 +36,20 @@ void *reception_msg(void *arg)
             printf("Déconnexion demandée par le serveur\n");
             return NULL;
         }
+        // On indique au thread principal qu'il y a eu des nouvelles données et on réinitialise les valeurs
         printf("\nDonnées reçues : %s\n", donnee);
         nouvelle_donnee = 1;
+        indice = 0;
         pthread_cond_signal(&cond_jeu);
-    }
-    if (taille_reponse == 0)
-    {
-        printf("\nFermeture du client\n");
-    }
-    else if (taille_reponse < 0)
-    {
-        perror("Erreur de réception");
+        if (taille_reponse == 0)
+        {
+            printf("\nFermeture du client\n");
+            break;
+        }
+        else if (taille_reponse < 0)
+        {
+            perror("Erreur de réception");
+        }
     }
 
     pthread_mutex_lock(&verrou_jeu);
@@ -53,11 +58,18 @@ void *reception_msg(void *arg)
 
     return NULL;
 }
-
+void gestion_signal(int signal)
+{
+    printf("%s\nProblème de pipe\n%s", ROUGE, BLANC);
+    pthread_mutex_lock(&verrou_jeu);
+    en_connexion = 0;
+    pthread_mutex_unlock(&verrou_jeu);
+    pthread_cond_signal(&cond_jeu);
+}
 int main(int argc, char const *argv[])
 {
-        printf("\nJe suis un robot!\n");
-
+    printf("\nJe suis un robot!\n");
+    signal(SIGPIPE, gestion_signal);
     char buffer[BUFFER_SIZE];
     int serveur_socket;
     int port = atoi(argv[1]);
@@ -85,7 +97,7 @@ int main(int argc, char const *argv[])
         pthread_mutex_lock(&verrou_jeu);
         while (!nouvelle_donnee && en_connexion)
         {
-            printf("\nEn attente de nouvelles données...\n");
+            printf("%s\nEn attente de nouvelles données...\n%s", JAUNE, BLANC);
             pthread_cond_wait(&cond_jeu, &verrou_jeu);
         }
         if (!en_connexion)
@@ -93,7 +105,7 @@ int main(int argc, char const *argv[])
             pthread_mutex_unlock(&verrou_jeu);
             break;
         }
-        printf("\nNouvelles données disponibles\n");
+        printf("%s\nNouvelles données disponibles\n%s", VERT, BLANC);
         int taille_int = string_to_int(donnee, tableau_int);
         tableau_rempli = 1;
         nouvelle_donnee = 0;
@@ -102,15 +114,16 @@ int main(int argc, char const *argv[])
         while (1)
         {
             pthread_mutex_lock(&verrou_jeu);
-
-            int indice = rand() % taille_int;
-            while (tableau_int[indice] == 0)
-            {
-                indice = rand() % taille_int;
-            }
             int valeur = tableau_int[indice];
+            if (tableau_int[indice] == 0)
+            {
+                printf("%s\nLe tableau comporte une erreur.\n%s", ROUGE, BLANC);
+                break;
+            }
+            
             printf("Indice %d: %d\n", indice, valeur);
             pthread_mutex_unlock(&verrou_jeu);
+            // Choix du temps de sommeil par rapport à la valeur de la carte
             int sommeil = 0;
             if (valeur >= 1 && valeur <= 25)
             {
@@ -128,24 +141,29 @@ int main(int argc, char const *argv[])
             {
                 sommeil = 8;
             }
-
+            // Simulation du sommeil
             for (int i = 0; i < sommeil; i++)
             {
-                printf("\nRompich pendant 1 seconde...\n");
+                printf("%s\nDors depuis %d seconde...\n%s", JAUNE, i, BLANC);
                 sleep(1);
+                pthread_mutex_lock(&verrou_jeu);
+
                 if (nouvelle_donnee)
                 {
-                    printf("\nNouvelles données reçues pendant le sommeil.\n");
+                    // On arrête le sommeil s'il y a de nouvelles données
+                    printf("%s\nNouvelles données reçues pendant le sommeil.\n%s", VERT, BLANC);
+                    pthread_mutex_unlock(&verrou_jeu);
+
                     break;
                 }
+                pthread_mutex_unlock(&verrou_jeu);
             }
-
+            // On met à 0 la valeur dans notre tableau
             tableau_int[indice] = 0;
             indice++;
             snprintf(buffer, BUFFER_SIZE, "%d", indice);
-            if (send(serveur_socket, buffer, strlen(buffer), 0) <= 0)
+            if (send(serveur_socket, buffer, strlen(buffer), 0) < 0)
             {
-                printf("Erreur lors de l'envoi des données\n");
                 break;
             }
 
@@ -158,15 +176,17 @@ int main(int argc, char const *argv[])
                     break;
                 }
             }
+            // On retourne en attente quand le tableau est vite
             if (tableau_rempli_temp)
             {
-                printf("\nTableau rempli de zéros, arrêt de l'envoi\n");
+                printf("%s\nTableau rempli de zéros, arrêt de l'envoi\n%s", JAUNE, BLANC);
                 pthread_mutex_unlock(&verrou_jeu);
                 break;
             }
             pthread_mutex_unlock(&verrou_jeu);
         }
     }
+    printf("\nTerminaison.\n");
     pthread_cancel(thread_reception);
     pthread_join(thread_reception, NULL);
     pthread_mutex_destroy(&verrou_jeu);

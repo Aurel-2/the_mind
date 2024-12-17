@@ -14,10 +14,11 @@
 
 extern Jeu *jeu;
 
+// Gère les communications avec un client spécifique
 void *gestionnaire_client(void *p_client)
 {
     InfoClient *info_client = p_client;
-    int est_vivant = 1;
+    int est_vivant = 1; // Indique si le client est toujours connecté
     char pseudo[BUFFER_SIZE];
     char buffer[BUFFER_SIZE];
     struct timeval debut;
@@ -33,19 +34,19 @@ void *gestionnaire_client(void *p_client)
     }
     pthread_mutex_unlock(&jeu->verrou_jeu);
 
+    // Réception du pseudo du client
     ssize_t reponse = recv(info_client->socket_client, pseudo, sizeof(pseudo) - 1, 0);
-
     if (reponse <= 0)
     {
         perror("Erreur lors de la réception du pseudo.");
         deconnexion_client(info_client);
         return NULL;
     }
-
     pseudo[reponse] = '\0';
-
+    pthread_mutex_lock(&jeu->verrou_jeu);
     snprintf(info_client->pseudo, sizeof(info_client->pseudo), "%s", pseudo);
     info_client->robot = (strcmp(info_client->pseudo, "robot") == 0) ? 1 : 0;
+    pthread_mutex_unlock(&jeu->verrou_jeu);
 
     pthread_mutex_lock(&jeu->verrou_jeu);
     while (jeu->etat == PRET)
@@ -65,6 +66,7 @@ void *gestionnaire_client(void *p_client)
     }
     pthread_mutex_unlock(&jeu->verrou_jeu);
 
+    // Boucle principale pour gérer les communications pendant le jeu
     while (jeu->etat != FIN && est_vivant)
     {
         pthread_mutex_lock(&jeu->verrou_jeu);
@@ -86,6 +88,7 @@ void *gestionnaire_client(void *p_client)
             }
             buffer[reponse] = '\0';
 
+            // Traitement de l'indice de carte reçu du client
             int indice = atoi(buffer) - 1;
             if (indice >= 0 && indice < jeu->manche)
             {
@@ -130,6 +133,7 @@ void *gestionnaire_client(void *p_client)
     return NULL;
 }
 
+// Gère la déconnexion d'un client
 void deconnexion_client(InfoClient *info_client)
 {
     pthread_mutex_lock(&jeu->verrou_jeu);
@@ -139,6 +143,7 @@ void deconnexion_client(InfoClient *info_client)
 
     jeu->nb_clients--;
 
+    // Si plus aucun client n'est connecté, ferme le serveur
     if (jeu->nb_clients == 0 && jeu->etat != PRET)
     {
         printf("Aucun joueur en ligne - fermeture du serveur.\n");
@@ -155,6 +160,8 @@ void deconnexion_client(InfoClient *info_client)
         pthread_cond_broadcast(&jeu->cond_jeu);
     }
 }
+
+// Affiche les données du client
 void affichage_donnees_client(InfoClient *info_client, int indice, float temps)
 {
     printf("%s\n-------------------------- Joueur %s ---------------------------\n%s", CYAN, info_client->pseudo, BLANC);
@@ -163,6 +170,7 @@ void affichage_donnees_client(InfoClient *info_client, int indice, float temps)
     printf("%s\n------------------------------------------------------------------\n%s", CYAN, BLANC);
 }
 
+// Calcule le temps de réaction du client
 float calcul_temps_reaction(struct timeval debut, struct timeval fin)
 {
     float temps = 0.0;
@@ -177,6 +185,7 @@ float calcul_temps_reaction(struct timeval debut, struct timeval fin)
     return temps;
 }
 
+// Traite la carte jouée par le client
 int traitement_carte_jouee(InfoClient *info_client, int indice, float temps, int indice_temps)
 {
     if (info_client->liste_cartes[indice] != '\0')

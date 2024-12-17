@@ -35,7 +35,7 @@ set xrange [0:*]
 set yrange [0:12]
 set xtics scale 0
 set ytics scale 0
-set xlabel "Temps de réaction en secondes"
+set xlabel "Temps de réaction moyen en secondes"
 set ylabel "Manche"
 set xtics 0.5
 plot "donnees.txt" using 1:3 with points linestyle 2
@@ -46,9 +46,9 @@ gnuplot graph_manche.gp
 cat << EOF > graph_occur.gp
 set terminal png font "Times,12" size 2000,800
 set output "graph_occur.png"
-set title "Nombre d'occurences de la dernière carte jouée."
+set title "Fréquence de la dernière carte jouée."
 set xlabel "Nombres"
-set ylabel "Occurrences"
+set ylabel "Fréquence"
 set border 3
 unset key
 set style histogram gap 1.5 
@@ -74,7 +74,7 @@ cat << EOF > stats.tex
 \usepackage{fancyhdr}
 \pagestyle{plain}    
 \begin{document}
-\title{Statistiques des données recueillies}
+\title{Statistiques des données collectées}
 \author{}
 \maketitle
 \newgeometry{top=0cm, bottom=0cm, left=0cm, right=0cm, headheight=0pt}  

@@ -7,6 +7,7 @@
 #include "../../include/jeu_fonctions.h"
 #include "../../include/utils.h"
 
+// Mélange les cartes dans le deck de manière aléatoire
 void melange_cartes(Jeu *jeu)
 {
     pthread_mutex_lock(&jeu->verrou_jeu);
@@ -19,9 +20,10 @@ void melange_cartes(Jeu *jeu)
     }
     pthread_mutex_unlock(&jeu->verrou_jeu);
 }
+
+// Distribue les cartes aux joueurs et trie les cartes en ordre croissant
 void distribution(Jeu *jeu)
 {
-
     int indice_tri = 0;
     pthread_mutex_lock(&jeu->verrou_jeu);
     for (int j = 0; j < jeu->max_clients; j++)
@@ -38,6 +40,8 @@ void distribution(Jeu *jeu)
         }
         printf("\n%s", BLANC);
     }
+
+    // Trie des cartes dans l'ordre croissant pour la référence du jeu
     tri(jeu->carte_bon_ordre, jeu->manche * jeu->max_clients);
     printf("\n%sCartes de tous les joueurs dans l'ordre croissant : ", JAUNE);
     for (int i = 0; i < jeu->max_clients * jeu->manche; i++)
@@ -46,8 +50,18 @@ void distribution(Jeu *jeu)
     }
     printf("\n%s", BLANC);
 
+    // Tri des cartes pour les robots
+    for (int i = 0; i < jeu->max_clients; i++)
+    {
+        if (jeu->liste_joueurs[i]->robot == 1)
+        {
+            tri(jeu->liste_joueurs[i]->liste_cartes, jeu->manche);
+        }
+    }
     pthread_mutex_unlock(&jeu->verrou_jeu);
 }
+
+// Prépare une nouvelle manche ou termine le jeu si la dernière manche est complétée
 void nouvelle_manche(Jeu *jeu)
 {
     char buffer[BUFFER_SIZE];
@@ -57,23 +71,27 @@ void nouvelle_manche(Jeu *jeu)
     {
         snprintf(buffer, BUFFER_SIZE, "%s\nVous avez complété toutes les manches, bravo !\n%s", VERT, BLANC);
         envoi_message(jeu, buffer);
-        jeu->etat = SCORE;
+        jeu->etat = SCORE; // Passage à l'état de score si toutes les manches sont complétées
     }
     else
     {
+        // Préparation pour une nouvelle manche
         jeu->etat = DISTRIBUTION;
         jeu->tour = 0;
         jeu->carte_actuelle = 0;
         free(jeu->cartes_jouee);
         free(jeu->carte_bon_ordre);
     }
+
+    // Libération des cartes des joueurs pour la nouvelle distribution
     for (int i = 0; i < jeu->max_clients; i++)
     {
-
         free(jeu->liste_joueurs[i]->liste_cartes);
     }
     pthread_mutex_unlock(&jeu->verrou_jeu);
 }
+
+// Insère les statistiques de jeu dans un fichier texte
 void insertion_stats(Jeu *jeu)
 {
     char buffer[BUFFER_SIZE];
@@ -82,12 +100,15 @@ void insertion_stats(Jeu *jeu)
     {
         total_moyenne_react += moyenne(jeu->liste_joueurs[i]->liste_temps_reaction, MAX_MANCHE * 2);
     }
+
+    // Enregistrement de la date et heure actuelles
     time_t t;
     time(&t);
     struct tm date = *localtime(&t);
     snprintf(buffer, BUFFER_SIZE, "%0.3f %d %d %d-%d-%d", total_moyenne_react, jeu->carte_actuelle, jeu->manche,
              date.tm_mday, date.tm_mon + 1, date.tm_year + 1900);
 
+    // Ouverture du fichier pour ajouter les nouvelles statistiques
     FILE *fichier = fopen("donnees.txt", "a");
     if (fichier == NULL)
     {
@@ -95,10 +116,12 @@ void insertion_stats(Jeu *jeu)
         kill(jeu->processus_pid, SIGINT);
     }
 
+    // Écriture des statistiques dans le fichier
     fprintf(fichier, "%s\n", buffer);
     fclose(fichier);
 }
 
+// Envoie les statistiques de jeu aux joueurs
 void envoi_stats(Jeu *jeu)
 {
     char buffer[BUFFER_SIZE];
@@ -111,6 +134,7 @@ void envoi_stats(Jeu *jeu)
         kill(jeu->processus_pid, SIGINT);
     }
 
+    // Lecture des 10 meilleures entrées et création du message de classement
     strcat(classement, "\n--- Top 10 --- \n");
     while (fgets(buffer, sizeof(buffer), fichier) != NULL)
     {
@@ -120,6 +144,7 @@ void envoi_stats(Jeu *jeu)
     pclose(fichier);
 }
 
+// Envoie un message d'état aux joueurs
 void message_etat(Jeu *jeu, InfoClient *client, char *message)
 {
     char buffer[BUFFER_SIZE];
@@ -160,6 +185,7 @@ void message_etat(Jeu *jeu, InfoClient *client, char *message)
     free(cartes_joueur_c);
 }
 
+// Envoie l'état du jeu à tous les clients joueurs
 void envoi_etat(Jeu *jeu, char *message)
 {
     for (int j = 0; j < jeu->max_clients; j++)
@@ -170,10 +196,11 @@ void envoi_etat(Jeu *jeu, char *message)
             {
                 message_etat(jeu, jeu->liste_joueurs[j], message);
             }
-
         }
     }
 }
+
+// Envoie un message à tous les joueurs clients
 void envoi_message(Jeu *jeu, char *message)
 {
     for (int j = 0; j < jeu->max_clients; j++)
@@ -198,6 +225,7 @@ void envoi_message(Jeu *jeu, char *message)
     }
 }
 
+// Envoie le tableau de cartes à un robot client
 void message_robot(Jeu *jeu, InfoClient *client)
 {
     char buffer_robot[BUFFER_SIZE];
