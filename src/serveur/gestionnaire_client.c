@@ -10,127 +10,151 @@
 
 #include "../../include/serveur.h"
 #include "../../include/jeu_fonctions.h"
+#include "../../include/utils.h"
 
-extern pthread_mutex_t verrou;
-extern pthread_cond_t cond;
 extern Jeu *jeu;
 
 void *gestionnaire_client(void *p_client)
 {
     InfoClient *info_client = p_client;
     int est_vivant = 1;
-    char name[BUFFER_SIZE];
+    char pseudo[BUFFER_SIZE];
     char buffer[BUFFER_SIZE];
     struct timeval debut;
     struct timeval fin;
-    pthread_mutex_lock(&verrou);
+
+    pthread_mutex_lock(&jeu->verrou_jeu);
     info_client->liste_temps_reaction = calloc(100, sizeof(float));
     if (info_client->liste_temps_reaction == NULL)
     {
-        printf("Erreur d'allocation mémoire.\n");
-        pthread_mutex_unlock(&verrou);
+        perror("Erreur d'allocation mémoire.");
+        pthread_mutex_unlock(&jeu->verrou_jeu);
         return NULL;
     }
-    pthread_mutex_unlock(&verrou);
-    ssize_t bytes = recv(info_client->socket_client, name, sizeof(name) - 1, 0);
-    if (bytes <= 0)
+    pthread_mutex_unlock(&jeu->verrou_jeu);
+
+    ssize_t reponse = recv(info_client->socket_client, pseudo, sizeof(pseudo) - 1, 0);
+
+    if (reponse <= 0)
     {
-        printf("%sErreur lors de la réception du nom du client.\n%s", ROUGE, BLANC);
+        perror("Erreur lors de la réception du pseudo.");
         deconnexion_client(info_client);
         return NULL;
     }
-    name[bytes] = '\0';
-    snprintf(info_client->pseudo, sizeof(info_client->pseudo), "%s", name);
-    sleep(1);
-    pthread_mutex_lock(&verrou);
-    if (strcmp(info_client->pseudo, "robot") == 0)
+
+    pseudo[reponse] = '\0';
+
+    snprintf(info_client->pseudo, sizeof(info_client->pseudo), "%s", pseudo);
+    info_client->robot = (strcmp(info_client->pseudo, "robot") == 0) ? 1 : 0;
+
+    pthread_mutex_lock(&jeu->verrou_jeu);
+    while (jeu->etat == PRET)
     {
-        info_client->robot = 1;
+        if (info_client->robot == 0)
+        {
+            snprintf(buffer, BUFFER_SIZE, "%s\nLe jeu est sur le point de commencer...\n%s", VERT, BLANC);
+            if (send(info_client->socket_client, buffer, strlen(buffer), 0) == -1)
+            {
+                perror("Erreur lors de l'envoi du message du début du jeu.");
+                pthread_mutex_unlock(&jeu->verrou_jeu);
+                deconnexion_client(info_client);
+                return NULL;
+            }
+        }
+        pthread_cond_wait(&jeu->cond_jeu, &jeu->verrou_jeu);
     }
-    else
-    {
-        info_client->robot = 0;
-    }
-    pthread_mutex_unlock(&verrou);
+    pthread_mutex_unlock(&jeu->verrou_jeu);
 
     while (jeu->etat != FIN && est_vivant)
     {
-        pthread_mutex_lock(&verrou);
+        pthread_mutex_lock(&jeu->verrou_jeu);
         while (jeu->etat == DISTRIBUTION)
         {
-            pthread_cond_wait(&cond, &verrou);
+            pthread_cond_wait(&jeu->cond_jeu, &jeu->verrou_jeu);
         }
-        pthread_mutex_unlock(&verrou);
+        pthread_mutex_unlock(&jeu->verrou_jeu);
+
         while (jeu->etat == EN_JEU)
         {
             gettimeofday(&debut, NULL);
-            bytes = recv(info_client->socket_client, buffer, BUFFER_SIZE, 0);
+            reponse = recv(info_client->socket_client, buffer, BUFFER_SIZE, 0);
             gettimeofday(&fin, NULL);
-            if (bytes <= 0)
+            if (reponse <= 0)
             {
-                if (bytes == 0)
-                {
-                    est_vivant = 0;
-                }
+                est_vivant = 0;
                 break;
             }
-            buffer[bytes] = '\0';
+            buffer[reponse] = '\0';
+
             int indice = atoi(buffer) - 1;
             if (indice >= 0 && indice < jeu->manche)
             {
-                int indice_temps = 0;
-                pthread_mutex_lock(&verrou);
-                const float temps = calcul_temps_reaction(debut, fin);
-                if (traitement_carte_jouee(info_client, indice, temps, indice_temps) == 0)
+                float temps = calcul_temps_reaction(debut, fin);
+                pthread_mutex_lock(&jeu->verrou_jeu);
+                if (traitement_carte_jouee(info_client, indice, temps, 0) == 0)
                 {
                     if (info_client->robot == 0)
                     {
-                        snprintf(buffer, BUFFER_SIZE, "%s\nIndice de carte invalide : carte déjà jouée\n%s", JAUNE, BLANC);
-                        send(info_client->socket_client, buffer, strlen(buffer), 0);
+                        snprintf(buffer, BUFFER_SIZE, "Indice de carte invalide : carte déjà jouée\n");
+                        if (send(info_client->socket_client, buffer, strlen(buffer), 0) == -1)
+                        {
+                            perror("Erreur lors de l'envoi du message de carte déjà jouée.");
+                            pthread_mutex_unlock(&jeu->verrou_jeu);
+                            est_vivant = 0;
+                            break;
+                        }
                     }
                 }
-                pthread_mutex_unlock(&verrou);
+                pthread_mutex_unlock(&jeu->verrou_jeu);
             }
             else
             {
-                pthread_mutex_lock(&verrou);
+                pthread_mutex_lock(&jeu->verrou_jeu);
                 if (info_client->robot == 0)
                 {
-                    snprintf(buffer, BUFFER_SIZE, "%s\nIndice de carte invalide : hors limites\n%s", ROUGE, BLANC);
-                    send(info_client->socket_client, buffer, strlen(buffer), 0);
+                    snprintf(buffer, BUFFER_SIZE, "Indice de carte invalide : hors limites\n");
+                    if (send(info_client->socket_client, buffer, strlen(buffer), 0) == -1)
+                    {
+                        perror("Erreur lors de l'envoi du message de carte invalide.");
+                        pthread_mutex_unlock(&jeu->verrou_jeu);
+                        est_vivant = 0;
+                        break;
+                    }
                 }
-                pthread_mutex_unlock(&verrou);
+                pthread_mutex_unlock(&jeu->verrou_jeu);
             }
         }
     }
+
     deconnexion_client(info_client);
     return NULL;
 }
 
 void deconnexion_client(InfoClient *info_client)
 {
-    pthread_mutex_lock(&verrou);
+    pthread_mutex_lock(&jeu->verrou_jeu);
+
     free(info_client->liste_cartes);
     free(info_client->liste_temps_reaction);
+
     jeu->nb_clients--;
 
     if (jeu->nb_clients == 0 && jeu->etat != PRET)
     {
-        printf("%s\nAucun joueur en ligne - fermeture du serveur.\n%s", BLEU, BLANC);
-        jeu->etat = FIN;
-        kill(jeu->processus_pid, SIGUSR1);
+        printf("Aucun joueur en ligne - fermeture du serveur.\n");
+        close(info_client->socket_client);
+        pthread_cond_signal(&jeu->cond_serveur);
+        pthread_cond_broadcast(&jeu->cond_jeu);
     }
     else
     {
-        nouvelle_manche(jeu);
-        envoi_message(jeu, "Déconnexion d'un joueur. Redémarrage de la manche sans perte de vie.");
+        envoi_message(jeu, "Un joueur s'est déconnecté, la partie est finie!\n");
+        pthread_mutex_unlock(&jeu->verrou_jeu);
+        close(info_client->socket_client);
+        jeu->etat = FIN;
+        pthread_cond_broadcast(&jeu->cond_jeu);
     }
-
-    close(info_client->socket_client);
-    pthread_mutex_unlock(&verrou);
-    pthread_cond_broadcast(&cond);
 }
-
 void affichage_donnees_client(InfoClient *info_client, int indice, float temps)
 {
     printf("%s\n-------------------------- Joueur %s ---------------------------\n%s", CYAN, info_client->pseudo, BLANC);
@@ -157,12 +181,12 @@ int traitement_carte_jouee(InfoClient *info_client, int indice, float temps, int
 {
     if (info_client->liste_cartes[indice] != '\0')
     {
+        affichage_donnees_client(info_client, indice, temps);
         jeu->carte_actuelle = info_client->liste_cartes[indice];
         info_client->liste_cartes[indice] = '\0';
         info_client->liste_temps_reaction[indice_temps] = temps;
         indice_temps++;
-        affichage_donnees_client(info_client, indice, temps);
-        pthread_cond_signal(&cond);
+        pthread_cond_signal(&jeu->cond_jeu);
         return 1;
     }
     return 0;

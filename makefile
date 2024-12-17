@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -g -Wall -lpthread
-PORT = 8080
+PORT = 8099
 
 SERVEUR_SRC = src/serveur/serveur.c
 UTILS_SRC = src/serveur/utils.c
@@ -12,7 +12,7 @@ CLIENT_R_SRC =  src/client/client_robot.c
 
 SERVEUR_OBJ = $(SERVEUR_SRC:.c=.o) $(UTILS_SRC:.c=.o) $(JEU_SRC:.c=.o) $(GESTIONNAIRE_SRC:.c=.o) $(JEU_FCTS_SRC:.c=.o)
 CLIENT_OBJ  = $(CLIENT_SRC:.c=.o)
-CLIENT_R_OBJ  = $(CLIENT_R_SRC:.c=.o)
+CLIENT_R_OBJ  = $(CLIENT_R_SRC:.c=.o) $(UTILS_SRC:.c=.o)
 SERVEUR_EXEC = serveur
 CLIENT_EXEC = client
 CLIENT_R_EXEC = client_robot
@@ -34,7 +34,7 @@ run-server:
 run-client: 
 	./$(CLIENT_EXEC) $(PORT)
 
-run-clientrobot:
+run-robot:
 	./$(CLIENT_R_EXEC) $(PORT)
 
 clean:

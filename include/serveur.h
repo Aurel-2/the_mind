@@ -4,19 +4,11 @@
 #include <sys/time.h>
 
 
-#define BLANC "\033[0m"
-#define ROUGE "\033[31m"
-#define VERT "\033[32m"
-#define JAUNE "\033[33m"
-#define BLEU "\033[34m"
-#define MAGENTA "\033[35m"
-#define CYAN "\033[36m"
 
 #define BUFFER_SIZE 1024
 #define MAX_MANCHE 12
-#define MAX_CLIENTS 2
-
-typedef enum {
+typedef enum
+{
     PRET,
     DISTRIBUTION,
     EN_JEU,
@@ -25,7 +17,8 @@ typedef enum {
     FIN
 } Status;
 
-typedef struct Client {
+typedef struct Client
+{
     int socket_client;
     char pseudo[BUFFER_SIZE];
     int *liste_cartes;
@@ -34,9 +27,14 @@ typedef struct Client {
     struct sockaddr_in client_addr;
 } InfoClient;
 
-typedef struct {
+typedef struct
+{
     pid_t processus_pid;
-    InfoClient *liste_joueurs[MAX_CLIENTS];
+    InfoClient **liste_joueurs;
+    pthread_mutex_t verrou_jeu;
+    pthread_cond_t cond_jeu;
+    pthread_mutex_t verrou_serveur;
+    pthread_cond_t cond_serveur;
     int socket_serveur;
     int vies;
     int deck[100];
@@ -46,11 +44,14 @@ typedef struct {
     int *carte_bon_ordre;
     int carte_actuelle;
     int nb_clients;
+    int max_clients;
     Status etat;
 } Jeu;
 
 /* SERVEUR */
 void gestion_signal(int signal);
+void nettoyage();
+void free_liste_joueurs();
 
 /* CLIENT */
 void *gestionnaire_client(void *p_client);

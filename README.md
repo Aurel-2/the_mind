@@ -31,7 +31,7 @@ Pour lancer un client :
 Pour lancer un client robot :
 
 ```bash
-  make run-clientrobot
+  make run-robot
 ```
 ### Suppression des fichiers
 
@@ -41,7 +41,7 @@ Pour supprimer les fichiers de compilation et les exécutables :
   make clean
 ```
 
-## Visualisation des statistiques d'un partie
+## Visualisation des statistiques.
 
 Les statistiques sont récoltés uniquement si la partie s'est terminée correctement.
 
@@ -51,7 +51,7 @@ Elles comportent :
 - Le temps de réaction moyen
 - La dernière carte qui a été joué
 - La dernière manche jouée 
-- La date.
+- La date
 
 ### Génération du PDF 
 ```bash
@@ -68,8 +68,7 @@ Le client robot peut également se bloquer.
 
 ### Améliorations possibles
 - Automatisation de la mise en route du jeu avec script shell
-  - Rendre plus modulaire le nombre de joueurs maximum et minimum en proposant à l'utilisateur de choisir
-- Améliorer le fonctionnement du client robot pour qu'il soit plus "intelligent"
+- Améliorer le fonctionnement du client robot pour qu'il soit plus "intelligent" et fonctionnel
 - Réaliser une interface graphique pour plus de convivialité
-- Rendre le code plus sécurisé en enlevant les variables globales en les encapsulant dans une structure.
+- Rendre le code plus sécurisé en enlevant les variables globales en les encapsulant dans une structure notamment pour le client robot.
 - Ajouter des fonctionnalités tel que le Shuriken présent dans le jeu physique, ajouter un timer...

@@ -5,33 +5,18 @@
 #include <pthread.h>
 #include <arpa/inet.h>
 #include <time.h>
-#include <errno.h>
+#include "../../include/utils.h"
 
 #define BUFFER_SIZE 1024
 #define SERVEUR_ADDR "127.0.0.1"
 
-pthread_mutex_t verrou = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t verrou_jeu = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond_jeu = PTHREAD_COND_INITIALIZER;
 int en_connexion = 1;
-char buffer[BUFFER_SIZE];
 char donnee[BUFFER_SIZE];
 int tableau_int[12];
 int tableau_rempli = 1;
-
-int string_to_int(char *donnee, int *tableau_int)
-{
-    int j = 0;
-    char *fin;
-    int taille = strlen(donnee);
-
-    for (int i = 0; i < taille; i++)
-    {
-        tableau_int[j] = strtol(&donnee[i], &fin, 10);
-        j++;
-        i = fin - donnee - 1;
-    }
-    return j;
-}
+int nouvelle_donnee = 0;
 
 void *reception_msg(void *arg)
 {
@@ -42,38 +27,40 @@ void *reception_msg(void *arg)
         donnee[taille_reponse] = '\0';
         if (strcmp(donnee, "q") == 0)
         {
-            pthread_mutex_lock(&verrou);
+            pthread_mutex_lock(&verrou_jeu);
             en_connexion = 0;
-            pthread_mutex_unlock(&verrou);
-            pthread_cond_signal(&cond);
+            pthread_mutex_unlock(&verrou_jeu);
+            pthread_cond_signal(&cond_jeu);
             printf("Déconnexion demandée par le serveur\n");
             return NULL;
         }
-        printf("Données reçues :%s\n", donnee);
-        pthread_cond_signal(&cond);
-        tableau_rempli = 1;
+        printf("\nDonnées reçues : %s\n", donnee);
+        nouvelle_donnee = 1;
+        pthread_cond_signal(&cond_jeu);
     }
     if (taille_reponse == 0)
     {
-        printf("Fermeture du client\n");
+        printf("\nFermeture du client\n");
     }
     else if (taille_reponse < 0)
     {
         perror("Erreur de réception");
     }
 
-    pthread_mutex_lock(&verrou);
+    pthread_mutex_lock(&verrou_jeu);
     en_connexion = 0;
-    pthread_mutex_unlock(&verrou);
+    pthread_mutex_unlock(&verrou_jeu);
 
     return NULL;
 }
 
 int main(int argc, char const *argv[])
 {
-    printf("Je suis un robot!\n");
+        printf("\nJe suis un robot!\n");
+
+    char buffer[BUFFER_SIZE];
     int serveur_socket;
-    const int port = atoi(argv[1]);
+    int port = atoi(argv[1]);
     struct sockaddr_in adresse_serveur;
     if ((serveur_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
@@ -95,68 +82,94 @@ int main(int argc, char const *argv[])
     srand(time(NULL));
     while (en_connexion)
     {
-        pthread_mutex_lock(&verrou);
-        pthread_cond_wait(&cond, &verrou);
-        pthread_mutex_unlock(&verrou);
-        pthread_mutex_lock(&verrou);
+        pthread_mutex_lock(&verrou_jeu);
+        while (!nouvelle_donnee && en_connexion)
+        {
+            printf("\nEn attente de nouvelles données...\n");
+            pthread_cond_wait(&cond_jeu, &verrou_jeu);
+        }
+        if (!en_connexion)
+        {
+            pthread_mutex_unlock(&verrou_jeu);
+            break;
+        }
+        printf("\nNouvelles données disponibles\n");
         int taille_int = string_to_int(donnee, tableau_int);
         tableau_rempli = 1;
+        nouvelle_donnee = 0;
+        pthread_mutex_unlock(&verrou_jeu);
+
         while (1)
         {
+            pthread_mutex_lock(&verrou_jeu);
+
             int indice = rand() % taille_int;
             while (tableau_int[indice] == 0)
             {
                 indice = rand() % taille_int;
             }
-
             int valeur = tableau_int[indice];
             printf("Indice %d: %d\n", indice, valeur);
+            pthread_mutex_unlock(&verrou_jeu);
+            int sommeil = 0;
             if (valeur >= 1 && valeur <= 25)
             {
-                printf("Sommeil de 2 secondes...\n");
-                sleep(2);
+                sommeil = 2;
             }
             else if (valeur > 25 && valeur <= 50)
             {
-                printf("Sommeil de 4 secondes...\n");
-                sleep(4);
+                sommeil = 4;
             }
             else if (valeur > 50 && valeur <= 75)
             {
-                printf("Sommeil de 6 secondes...\n");
-                sleep(6);
+                sommeil = 6;
             }
             else
             {
-                sleep(10);
+                sommeil = 8;
+            }
+
+            for (int i = 0; i < sommeil; i++)
+            {
+                printf("\nRompich pendant 1 seconde...\n");
+                sleep(1);
+                if (nouvelle_donnee)
+                {
+                    printf("\nNouvelles données reçues pendant le sommeil.\n");
+                    break;
+                }
             }
 
             tableau_int[indice] = 0;
             indice++;
             snprintf(buffer, BUFFER_SIZE, "%d", indice);
-            send(serveur_socket, buffer, strlen(buffer), 0);
+            if (send(serveur_socket, buffer, strlen(buffer), 0) <= 0)
+            {
+                printf("Erreur lors de l'envoi des données\n");
+                break;
+            }
+
+            int tableau_rempli_temp = 1;
             for (int i = 0; i < taille_int; i++)
             {
                 if (tableau_int[i] != 0)
                 {
-                    tableau_rempli = 0;
+                    tableau_rempli_temp = 0;
                     break;
                 }
             }
-
-            if (tableau_rempli)
+            if (tableau_rempli_temp)
             {
-                printf("Tableau rempli de zéros, arrêt de l'envoi\n");
+                printf("\nTableau rempli de zéros, arrêt de l'envoi\n");
+                pthread_mutex_unlock(&verrou_jeu);
                 break;
             }
+            pthread_mutex_unlock(&verrou_jeu);
         }
-        pthread_mutex_unlock(&verrou);
     }
-
     pthread_cancel(thread_reception);
     pthread_join(thread_reception, NULL);
-    pthread_mutex_destroy(&verrou);
+    pthread_mutex_destroy(&verrou_jeu);
     close(serveur_socket);
-
     return 0;
 }

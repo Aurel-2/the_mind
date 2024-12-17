@@ -7,7 +7,7 @@
 
 #define BUFFER_SIZE 1024
 #define SERVEUR_ADDR "127.0.0.1"
-pthread_mutex_t verrou = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t verrou_jeu = PTHREAD_MUTEX_INITIALIZER;
 int en_connexion = 1;
 
 void *reception_msg(void *arg)
@@ -20,9 +20,9 @@ void *reception_msg(void *arg)
         buffer[taille_reponse] = '\0';
         if (strcmp(buffer, "q") == 0)
         {
-            pthread_mutex_lock(&verrou);
+            pthread_mutex_lock(&verrou_jeu);
             en_connexion = 0;
-            pthread_mutex_unlock(&verrou);
+            pthread_mutex_unlock(&verrou_jeu);
             printf("Déconnexion demandée par le serveur\n");
             return NULL;
         }
@@ -38,9 +38,9 @@ void *reception_msg(void *arg)
         perror("Erreur de réception");
     }
 
-    pthread_mutex_lock(&verrou);
+    pthread_mutex_lock(&verrou_jeu);
     en_connexion = 0;
-    pthread_mutex_unlock(&verrou);
+    pthread_mutex_unlock(&verrou_jeu);
     return NULL;
 }
 
@@ -93,7 +93,7 @@ int main(int argc, char const *argv[])
     }
     pthread_cancel(thread_reception);
     pthread_join(thread_reception, NULL);
-    pthread_mutex_destroy(&verrou);
+    pthread_mutex_destroy(&verrou_jeu);
     close(serveur_socket);
     return 0;
 }

@@ -1,0 +1,30 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[a4paper, top=2.5cm, bottom=2cm, left=2cm, right=2cm, headheight=14pt]{geometry} 
+\usepackage{graphicx}           
+\usepackage{pdflscape}  
+\usepackage{fancyhdr}
+\pagestyle{plain}    
+\begin{document}
+\title{Statistiques des données recueillies}
+\author{}
+\maketitle
+\newgeometry{top=0cm, bottom=0cm, left=0cm, right=0cm, headheight=0pt}  
+\thispagestyle{empty}
+\begin{landscape}
+\vfill
+\begin{figure}
+    \centering
+    \includegraphics[scale=0.5]{graph_manche.png}
+\end{figure}
+\vfill
+\newpage
+\thispagestyle{empty}
+\vfill
+\begin{figure}
+    \centering
+    \includegraphics[scale=0.5]{graph_occur.png}
+\end{figure}
+\vfill
+\end{landscape}
+\restoregeometry
+\end{document}

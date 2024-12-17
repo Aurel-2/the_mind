@@ -3,10 +3,10 @@
 #include <string.h>
 #include "../../include/utils.h"
 
-char *tab_to_string(int *tab, int size) {
+char *int_to_string(int *tab, int size) {
     char *resultat = (char *) calloc(size * 4 + 1, sizeof(char));
     if (resultat == NULL) {
-        perror("Erreur d'allocation mémoire pour tab_to_string");
+        perror("Erreur d'allocation mémoire pour int_to_string");
         return NULL;
     }
     resultat[0] = '\0';
@@ -44,4 +44,19 @@ void tri(int *cartes, int taille) {
             }
         }
     }
+}
+
+int string_to_int(char *donnee, int *tableau_int)
+{
+    int j = 0;
+    char *fin;
+    int taille = strlen(donnee);
+
+    for (int i = 0; i < taille; i++)
+    {
+        tableau_int[j] = strtol(&donnee[i], &fin, 10);
+        j++;
+        i = fin - donnee - 1;
+    }
+    return j;
 }
